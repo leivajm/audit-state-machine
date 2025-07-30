@@ -32,7 +32,7 @@ This implementation follows a functional approach to ensure **type safety**, **i
 Clone the repository and install the development dependencies:
 
 ```bash
-git clone [https://github.com/leivajm/audit-state-machine.git](https://github.com/leivajm/audit-state-machine.git)
+git clone https://github.com/leivajm/audit-state-machine.git
 cd audit-state-machine
 npm install
 ```
