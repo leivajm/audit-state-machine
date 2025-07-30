@@ -1,65 +1,56 @@
-export type AuditState = 'Pending' | 'InProgress' | 'Completed' | 'Cancelled';
-
-export interface Audit {
+export interface AuditContext {
     readonly id: string;
-    state: AuditState;
-    data: {
-        createdAt: Date;
-        updatedAt: Date;
-        summary?: string;
-        cancellationReason?: string;
-    };
+    readonly createdAt: Date;
+    readonly summary?: string;
+    readonly cancellationReason?: string;
 }
 
-export class AuditWorkflow {
-    private audit: Audit;
+export type AuditState =
+    | { readonly status: 'Pending'; readonly context: Pick<AuditContext, 'id' | 'createdAt'> }
+    | { readonly status: 'InProgress'; readonly context: Pick<AuditContext, 'id' | 'createdAt'> }
+    | { readonly status: 'Completed'; readonly context: Required<Pick<AuditContext, 'id' | 'createdAt' | 'summary'>> }
+    | { readonly status: 'Cancelled'; readonly context: Pick<AuditContext, 'id' | 'createdAt' | 'cancellationReason'> };
 
-    constructor(auditId: string) {
-        this.audit = {
-            id: auditId,
-            state: 'Pending',
-            data: {
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        };
-        console.log(`[Audit #${this.audit.id}] Created. Initial state: ${this.audit.state}`);
+export type AuditEvent =
+    | { readonly type: 'START' }
+    | { readonly type: 'COMPLETE'; readonly summary: string }
+    | { readonly type: 'CANCEL'; readonly reason?: string };
+
+export function transition(state: AuditState, event: AuditEvent): AuditState {
+    switch (state.status) {
+        case 'Pending':
+            if (event.type === 'START') {
+                // Return a new state object (immutability)
+                return { status: 'InProgress', context: state.context };
+            }
+            break;
+
+        case 'InProgress':
+            if (event.type === 'COMPLETE') {
+                if (!event.summary || event.summary.trim().length === 0) {
+                    throw new Error('A summary is required to complete the audit.');
+                }
+                return {
+                    status: 'Completed',
+                    context: { ...state.context, summary: event.summary },
+                };
+            }
+            if (event.type === 'CANCEL') {
+                return {
+                    status: 'Cancelled',
+                    context: { ...state.context, cancellationReason: event.reason },
+                };
+            }
+            break;
+
+        case 'Completed':
+        case 'Cancelled':
+            if (event.type === 'CANCEL' || event.type === 'START' || event.type === 'COMPLETE') {
+                console.warn(`Action '${event.type}' is invalid in terminal state '${state.status}'.`);
+                return state;
+            }
+            break;
     }
 
-    public start() {
-        if (this.audit.state !== 'Pending') {
-            throw new Error(`Cannot start audit in state '${this.audit.state}'. Must be 'Pending'.`);
-        }
-        this.transitionTo('InProgress');
-    }
-
-    public complete(summary: string) {
-        if (this.audit.state !== 'InProgress') {
-            throw new Error(`Cannot complete audit in state '${this.audit.state}'. Must be 'InProgress'.`);
-        }
-        if (!summary || summary.trim().length === 0) {
-            throw new Error('A summary is required to complete the audit.');
-        }
-        this.audit.data.summary = summary;
-        this.transitionTo('Completed');
-    }
-
-    public cancel(reason?: string) {
-        if (this.audit.state === 'Completed' || this.audit.state === 'Cancelled') {
-            throw new Error(`Cannot cancel audit in a terminal state ('${this.audit.state}').`);
-        }
-        this.audit.data.cancellationReason = reason;
-        this.transitionTo('Cancelled');
-    }
-
-    private transitionTo(newState: AuditState) {
-        const oldState = this.audit.state;
-        this.audit.state = newState;
-        this.audit.data.updatedAt = new Date();
-        console.log(`[Audit #${this.audit.id}] Transitioned: ${oldState} -> ${newState}`);
-    }
-
-    public getAudit(): Readonly<Audit> {
-        return JSON.parse(JSON.stringify(this.audit));
-    }
+    throw new Error(`Invalid transition: Cannot handle event '${event.type}' in state '${state.status}'.`);
 }

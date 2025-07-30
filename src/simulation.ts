@@ -1,18 +1,29 @@
-import { AuditWorkflow } from './state-machine';
+import { transition, AuditState, AuditEvent } from './state-machine';
+
+function logState(state: AuditState) {
+    console.log(`[Simulation] Current state: ${state.status}`, state.context);
+}
 
 function runSuccessfulAudit() {
     console.log('--- Running Simulation: Successful Audit Flow ---');
     try {
-        const audit = new AuditWorkflow('AUD-001');
-        console.log('Current state:', audit.getAudit().state);
+        let currentState: AuditState = {
+            status: 'Pending',
+            context: { id: 'AUD-001', createdAt: new Date() },
+        };
+        logState(currentState);
 
-        audit.start();
-        console.log('Current state:', audit.getAudit().state);
+        console.log("\nDispatching event: { type: 'START' }");
+        currentState = transition(currentState, { type: 'START' });
+        logState(currentState);
 
-        audit.complete('All screenshots verified and updated.');
-        console.log('Current state:', audit.getAudit().state);
+        console.log("\nDispatching event: { type: 'COMPLETE', summary: '...' }");
+        currentState = transition(currentState, {
+            type: 'COMPLETE',
+            summary: 'All screenshots verified and updated.',
+        });
+        logState(currentState);
 
-        console.log('Final Audit Data:', audit.getAudit());
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('An unexpected error occurred:', errorMessage);
@@ -23,11 +34,18 @@ function runSuccessfulAudit() {
 function runInvalidTransition() {
     console.log('--- Running Simulation: Invalid Transition Flow ---');
     try {
-        const audit = new AuditWorkflow('AUD-002');
-        console.log('Current state:', audit.getAudit().state);
+        let currentState: AuditState = {
+            status: 'Pending',
+            context: { id: 'AUD-002', createdAt: new Date() },
+        };
+        logState(currentState);
 
-        console.log('Attempting to complete an audit that has not started...');
-        audit.complete('This should fail.');
+        console.log("\nDispatching invalid event: { type: 'COMPLETE', summary: '...' }");
+        currentState = transition(currentState, {
+            type: 'COMPLETE',
+            summary: 'This should fail.',
+        });
+        logState(currentState);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
