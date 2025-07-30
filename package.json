@@ -1,0 +1,21 @@
+{
+  "name": "audit-state-machine",
+  "version": "1.0.0",
+  "main": "dist/simulation.js",
+  "scripts": {
+    "start": "ts-node src/simulation.ts",
+    "test": "vitest"
+  },
+  "keywords": [
+    "typescript",
+    "state-machine"
+  ],
+  "author": "José Leiva",
+  "license": "ISC",
+  "description": "A state machine for a basic Audit workflow.",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
