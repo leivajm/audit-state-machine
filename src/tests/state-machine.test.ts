@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AuditWorkflow } from '../src/state-machine';
+import { AuditWorkflow } from '../state-machine';
 
 describe('AuditWorkflow', () => {
     let workflow: AuditWorkflow;
